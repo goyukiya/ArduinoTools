@@ -6,8 +6,10 @@ const int INPUT_PULSE1_PIN=8;
 const int INPUT_PULSE2_PIN=9;
 const int INPUT_STATIC_PIN=10;
 
-// pulse duty cycle in %
-const int PULSE_DUTY = 20;
+// pulse High duration in microseconds
+const int PULSE0_DUR= 5000;
+const int PULSE1_DUR = 5000;
+const int PULSE2_DUR = 5000;
 // pulse frequencies in Hz 
 const int PULSE0_FREQ = 20;
 const int PULSE1_FREQ = 10;
@@ -31,16 +33,16 @@ void setup()
   // compute HIGH and LOW durations
   // PULSE0
   double pulsePeriod= 1000.0 * 1000.0/PULSE0_FREQ; // microseconds
-  highDurations[0]=(unsigned long)(pulsePeriod * PULSE_DUTY/100);
-  lowDurations[0]=(unsigned long)(pulsePeriod - highDurations[0]);
+  highDurations[0]= (unsigned long) ((PULSE0_DUR >= pulsePeriod)? pulsePeriod/2 : PULSE0_DUR);
+  lowDurations[0]= (unsigned long) (pulsePeriod - highDurations[0]);
   // PULSE1
   pulsePeriod= 1000.0 * 1000.0/PULSE1_FREQ;
-  highDurations[1]=(unsigned long)(pulsePeriod * PULSE_DUTY/100);
-  lowDurations[1]=(unsigned long)(pulsePeriod - highDurations[1]);
+  highDurations[1]= (unsigned long) ((PULSE1_DUR >= pulsePeriod)? pulsePeriod/2 : PULSE1_DUR);
+  lowDurations[1]= (unsigned long) (pulsePeriod - highDurations[1]);
   // PULSE2
   pulsePeriod= 1000.0 * 1000.0/PULSE2_FREQ;
-  highDurations[2]=(unsigned long)(pulsePeriod * PULSE_DUTY/100);
-  lowDurations[2]=(unsigned long)(pulsePeriod - highDurations[2]);
+  highDurations[2]= (unsigned long) ((PULSE2_DUR >= pulsePeriod)? pulsePeriod/2 : PULSE2_DUR);
+  lowDurations[2]=(unsigned long) (pulsePeriod - highDurations[2]);
   
   // initial status
   digitalWrite(OUTPUT_PIN, LOW);
