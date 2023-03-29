@@ -7,7 +7,7 @@
 
 // output pin
 const int OUTPUT_PIN= 2;
-// input pins
+// input pin
 const int INPUT_PIN= 7;
 
 // pulse High duration in microseconds
@@ -29,7 +29,7 @@ void setup()
   pinMode(INPUT_PIN, INPUT);
 
   // period in microseconds
-  double pulsePeriod= 1000.0 * 1000.0/PULSE_FREQ; 
+  double pulsePeriod= 1000.0*1000.0/PULSE_FREQ; 
   
   // compute HIGH and LOW durations
   highDuration= (unsigned long) ((PULSE_DUR >= pulsePeriod)? pulsePeriod/2 : PULSE_DUR); // 50% duty cycle if requested duration is too high
@@ -48,7 +48,7 @@ void outputOnePulse()
   while(!(micros()-previousTime > highDuration)){}
   digitalWrite(OUTPUT_PIN, LOW);
   // wait for lowDuration
-  previousTime = micros();
+  previousTime= micros();
   while(!(micros()-previousTime > lowDuration)){}  
 }
 
