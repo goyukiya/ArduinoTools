@@ -1,11 +1,10 @@
 /** MULTI PULSE GENERATOR
  * reads the state of the input PIN and outputs several pulses if the input pin is HIGH.
- * Ch8: (20ms on - 30ms off)  x repeat
-Ch9: 25ms off -  (20ms on -30ms off) x repeat
-Ch10: 2ms off - (16ms on - 9ms off) x repeat
  * author: yuki.goya@riken.jp 
- * v23.03.15
+ * v23.07.07
  **/
+
+// ******************* SETTINGS **********************************
 
 // input pin
 const int INPUT_PIN= 2;
