@@ -1,6 +1,8 @@
 /** MULTI PULSE GENERATOR
  * reads the state of the input PIN and outputs several pulses if the input pin is HIGH.
- * 
+ * Ch8: (20ms on - 30ms off)  x repeat
+Ch9: 25ms off -  (20ms on -30ms off) x repeat
+Ch10: 2ms off - (16ms on - 9ms off) x repeat
  * author: yuki.goya@riken.jp 
  * v23.03.15
  **/
@@ -11,13 +13,16 @@ const int INPUT_PIN= 2;
 const int OUTPUT_PINS[3]= {8, 9, 10};
 
 // output pulses frequency in Hz 
-const float PULSE_FREQ[3]= {20.0, 20.0, 60.0};
+const float PULSE_FREQ[3]= {20.0, 20.0, 40.0};
 
 // output pulses width in microseconds
-const long PULSE_WID[3]= {25000, 25000, 8333}; // 50% duty cycle on all channels
+const long PULSE_WID[3]= {20000, 20000, 16000};
 
 // output pulses offset in microseconds
-const long PULSE_OFFSET[3]= {0, 20000, 0};
+const long PULSE_OFFSET[3]= {0, 0, 0};
+
+// output pulses initial delays in microseconds
+const long INITIAL_DELAY[3]= {0, 25000, 2000};
 
 // ***************************************************************
 
@@ -56,10 +61,11 @@ void setup()
 
 void updatePIN(short idx)
 {
-  if(digitalRead(INPUT_PIN)==LOW)
+  if(digitalRead(INPUT_PIN)==LOW) // DO NOTHING
   {
     if(pinStatus[idx]) digitalWrite(OUTPUT_PINS[idx], LOW);
     pinStatus[idx]= 0;
+    previousTimes[idx]= micros();
   }
   else
   {
@@ -89,6 +95,8 @@ void updatePIN(short idx)
     }
     else // 0
     {
+      if(!(micros()-previousTimes[idx] > INITIAL_DELAY[idx])) return;
+      // DELAY done!
       pinStatus[idx]= 1; // -> OFFSET
       digitalWrite(OUTPUT_PINS[idx], LOW);
       previousTimes[idx]= micros();
