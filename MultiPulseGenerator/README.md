@@ -21,10 +21,10 @@ Uses Ch.8, 9 & 10 for output.
 - Frequencies defined in Hertz.
   `PULSE_FREQ[3]= {20.0, 20.0, 40.0};`
 
-- Single pulse width defined in microseconds.
+- Single pulse widths defined in microseconds.
   `PULSE_WID[3]= {20000, 20000, 16000};`
 
-- Pulse start offset in microseconds.
+- Pulse start offsets in microseconds.
   `PULSE_OFFSET[3]= {0, 0, 0};`
 
 - Output initial delays in microseconds
