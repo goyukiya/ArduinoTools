@@ -1,109 +1,130 @@
 /** MULTI PULSE GENERATOR
- * reads the state of the input PIN and outputs several pulses if the input pin is HIGH.
- * author: yuki.goya@riken.jp 
- * v23.07.07
+   reads the state of the input PIN and outputs several pulses if the input pin is HIGH.
+   author: yuki.goya@riken.jp
+   v23.07.31
  **/
 
 // ******************* SETTINGS **********************************
 
-// input pin
-const int INPUT_PIN= 2;
-// output pins
-const int OUTPUT_PINS[3]= {8, 9, 10};
+// number of output pins
+const static byte OUTPUT_COUNT = 4;
 
-// output pulses frequency in Hz 
-const float PULSE_FREQ[3]= {20.0, 20.0, 40.0};
+// input pin
+const static int INPUT_PIN = 2;
+
+// output pins
+const static int OUTPUT_PINS[OUTPUT_COUNT] = { 8, 12, 13, 13 };
+
+// output pulses frequency in Hz
+const static float PULSE_FREQ[OUTPUT_COUNT] = { 20.0, 20.0, 20.0, 20.0 };
 
 // output pulses width in microseconds
-const long PULSE_WID[3]= {20000, 20000, 16000};
+const static long PULSE_WIDTH[OUTPUT_COUNT] = { 20000, 20000, 16000, 16000 };
 
 // output pulses offset in microseconds
-const long PULSE_OFFSET[3]= {0, 0, 0};
+const static long PULSE_OFFSET[OUTPUT_COUNT] = { 0, 25000, 2000, 27000 };
 
-// output pulses initial delays in microseconds
-const long INITIAL_DELAY[3]= {0, 25000, 2000};
+// output pulses initial delay in microseconds
+const static long INITIAL_DELAY[OUTPUT_COUNT] = { 0, 0, 0, 0 };
 
 // ***************************************************************
 
 // pulse pre/high/post durations in microseconds
-unsigned long preDurations[3];
-unsigned long highDurations[3];
-unsigned long postDurations[3];
+static unsigned long preDurations[OUTPUT_COUNT];
+static unsigned long highDurations[OUTPUT_COUNT];
+static unsigned long postDurations[OUTPUT_COUNT];
 
-// timestamps in milliseconds
-unsigned long previousTimes[3];
+// timestamps in microseconds
+static unsigned long previousTimes[OUTPUT_COUNT];
+
 // current pin status
-short pinStatus[3];
+static byte pinStatus[OUTPUT_COUNT];
 
-void setup()
-{
+// ***************************************************************
+
+// initial setup
+void setup() {
   // set input pin
   pinMode(INPUT_PIN, INPUT);
   // set output pins and pulse durations
-  for(short i=0;i<3;i++) 
-  {
+  for (byte i = 0; i < OUTPUT_COUNT; i++) {
     pinMode(OUTPUT_PINS[i], OUTPUT);
     // max period in microseconds
-    double maxPulsePeriod= 1e6/PULSE_FREQ[i];
-    // set HIGH and LOW durations. 
+    double maxPulsePeriod = 1e6 / PULSE_FREQ[i];
+    // set HIGH and LOW durations.
     // 50% duty cycle of maxPulsePeriod if requested HIGH duration is too high.
-    highDurations[i]= (unsigned long) (PULSE_WID[i]>=maxPulsePeriod)? maxPulsePeriod/2 : PULSE_WID[i];
+    highDurations[i] = (unsigned long)(PULSE_WIDTH[i] >= maxPulsePeriod) ? maxPulsePeriod / 2 : PULSE_WIDTH[i];
     // 0 OFFSET if requested value too high.
-    preDurations[i]= (unsigned long)(PULSE_OFFSET[i]>=(maxPulsePeriod - highDurations[i]))? 0: PULSE_OFFSET[i];
-    postDurations[i]= (unsigned long) (maxPulsePeriod - highDurations[i] - preDurations[i]);
+    preDurations[i] = (unsigned long)(PULSE_OFFSET[i] >= (maxPulsePeriod - highDurations[i])) ? 0 : PULSE_OFFSET[i];
+    postDurations[i] = (unsigned long)(maxPulsePeriod - highDurations[i] - preDurations[i]);
     // initial status
     digitalWrite(OUTPUT_PINS[i], LOW);
-    previousTimes[i]= 0;
-    pinStatus[i]= 0;
+
+    previousTimes[i] = 0;
+    pinStatus[i] = 0;
   }
 }
 
-void updatePIN(short idx)
-{
-  if(digitalRead(INPUT_PIN)==LOW) // DO NOTHING
+// Main loop
+void loop() {
+  unsigned long currentMicros = micros();
+
+  // check input
+  if (digitalRead(INPUT_PIN) == LOW)  // No input
   {
-    if(pinStatus[idx]) digitalWrite(OUTPUT_PINS[idx], LOW);
-    pinStatus[idx]= 0;
-    previousTimes[idx]= micros();
-  }
-  else
+    // stop all ongoing outputs
+    for (byte i = 0; i < OUTPUT_COUNT; i++) {
+      if (pinStatus[i]) {
+        digitalWrite(OUTPUT_PINS[i], LOW);
+        pinStatus[i] = 0;
+      }
+      // update timestamp
+      previousTimes[i] = currentMicros;
+    }
+  } else  // Input ON
   {
-    if(pinStatus[idx]== 1) // OFFSET
-    {
-      if(!(micros()-previousTimes[idx] > preDurations[idx])) return;
-      // OFFSET done!
-      pinStatus[idx]= 2; // -> HIGH
-      digitalWrite(OUTPUT_PINS[idx], HIGH);
-      previousTimes[idx]= micros();
-    }
-    else if(pinStatus[idx]== 2) // HIGH
-    {
-      if(!(micros()-previousTimes[idx] > highDurations[idx])) return;
-      // HIGH done!
-      pinStatus[idx]= 3; // -> LOW
-      digitalWrite(OUTPUT_PINS[idx], LOW);
-      previousTimes[idx]= micros();
-    }
-    else if(pinStatus[idx]== 3) // LOW
-    {
-      if(!(micros()-previousTimes[idx] > postDurations[idx])) return;
-      // LOW done!
-      pinStatus[idx]= 1; // -> OFFSET
-      digitalWrite(OUTPUT_PINS[idx], LOW);
-      previousTimes[idx]= micros();
-    }
-    else // 0
-    {
-      if(!(micros()-previousTimes[idx] > INITIAL_DELAY[idx])) return;
-      // DELAY done!
-      pinStatus[idx]= 1; // -> OFFSET
-      digitalWrite(OUTPUT_PINS[idx], LOW);
-      previousTimes[idx]= micros();
+    for (byte i = 0; i < OUTPUT_COUNT; i++) {
+      unsigned long dt = currentMicros - previousTimes[i];
+      switch (pinStatus[i]) {
+        case 0:
+          if (dt > INITIAL_DELAY[i]) {
+            pinStatus[i] = 1;  // INI done, move to PRE
+            // update timestamp
+            previousTimes[i] = currentMicros;
+          }
+          break;
+        case 1:
+          if (dt > preDurations[i]) {
+            pinStatus[i] = 2;  // PRE done, move to HIGH
+            digitalWrite(OUTPUT_PINS[i], HIGH);
+            // update timestamp
+            previousTimes[i] = currentMicros;
+          }
+          break;
+        case 2:
+          if (dt > highDurations[i]) {
+            pinStatus[i] = 3;  // HIGH done, move to POST
+            digitalWrite(OUTPUT_PINS[i], LOW);
+            // update timestamp
+            previousTimes[i] = currentMicros;
+          }
+          break;
+        case 3:
+          if (dt > postDurations[i]) {
+            pinStatus[i] = 1;  // POST done, move to PRE
+            // update timestamp
+            previousTimes[i] = currentMicros;
+          }
+          break;
+        default:  // ERRROR
+          // cancel output
+          digitalWrite(OUTPUT_PINS[i], LOW);
+          pinStatus[i] = 0;
+          // update timestamp
+          previousTimes[i] = currentMicros;
+      }
     }
   }
 }
 
-void loop()
-{ 
-  for(short i=0;i<3;i++) updatePIN(i); 
-}
+// eof
